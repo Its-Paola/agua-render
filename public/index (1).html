@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nivel de Agua - Render</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 820px; margin: 25px auto; padding: 0 15px; }
+    .resumen { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
+    .caja { border: 1px solid #ccc; border-radius: 8px; padding: 14px; min-width: 150px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>Monitoreo de Nivel de Agua</h1>
+
+  <div class="resumen">
+    <div class="caja"><strong>Nivel:</strong> <span id="pct">-- %</span></div>
+    <div class="caja"><strong>Estado:</strong> <span id="estado">--</span></div>
+    <div class="caja"><strong>Altura agua:</strong> <span id="nivel">-- cm</span></div>
+    <div class="caja"><strong>Distancia:</strong> <span id="dist">-- cm</span></div>
+    <div class="caja"><strong>Ultima hora:</strong> <span id="hora">--</span></div>
+  </div>
+
+  <h3>Historial de mediciones</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Hora</th>
+        <th>Porcentaje</th>
+        <th>Nivel (cm)</th>
+        <th>Distancia (cm)</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody id="cuerpoTabla"></tbody>
+  </table>
+
+  <script>
+    async function actualizar() {
+      try {
+        const res = await fetch("/api/datos");
+        const data = await res.json();
+        const act = data.actual;
+        if (act) {
+          document.getElementById("pct").textContent = act.porcentaje + " %";
+          document.getElementById("estado").textContent = act.estado;
+          document.getElementById("nivel").textContent = act.nivel_cm + " cm";
+          document.getElementById("dist").textContent = act.distancia_cm + " cm";
+          document.getElementById("hora").textContent = act.hora;
+        }
+        const tbody = document.getElementById("cuerpoTabla");
+        tbody.innerHTML = "";
+        [...(data.historial || [])].reverse().forEach(item => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${item.hora}</td><td>${item.porcentaje} %</td><td>${item.nivel_cm} cm</td><td>${item.distancia_cm} cm</td><td>${item.estado}</td>`;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    actualizar();
+    setInterval(actualizar, 3000);
+  </script>
+</body>
+</html>
