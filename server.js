@@ -1,12 +1,7 @@
 const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
 const path = require("path");
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
-
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -28,13 +23,15 @@ app.post("/api/cambio", (req, res) => {
     return res.status(400).json({ ok: false, error: "Datos incompletos" });
   }
 
+  const horaActual = new Date().toLocaleTimeString("es-MX", { hour12: false });
+
   const registro = {
     distancia_cm: Number(distancia_cm.toFixed(2)),
     nivel_cm: Number(nivel_cm.toFixed(2)),
     porcentaje: Number(porcentaje.toFixed(1)),
     altura_cm: typeof altura_cm === "number" ? Number(altura_cm.toFixed(1)) : null,
     estado: String(estado),
-    fecha: new Date().toLocaleString("es-MX", { hour12: false })
+    hora: horaActual
   };
 
   ultimoEstado = registro;
@@ -43,20 +40,13 @@ app.post("/api/cambio", (req, res) => {
     historial.shift();
   }
 
-  // Avisar en tiempo real a las pantallas conectadas
-  io.emit("nuevo_nivel", { actual: ultimoEstado, historial });
-
   return res.json({ ok: true, mensaje: "Cambio registrado" });
 });
 
-app.get("/api/estado", (req, res) => {
+app.get("/api/datos", (req, res) => {
   res.json({ actual: ultimoEstado, historial });
 });
 
-io.on("connection", (socket) => {
-  socket.emit("nuevo_nivel", { actual: ultimoEstado, historial });
-});
-
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
 });
